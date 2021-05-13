@@ -67,7 +67,7 @@
   void initMotorController() {
     drive.init();
     drive.enableDrivers();
-    //drive.flipM1(true);
+    drive.flipM1(true);
   }
 
   /* Wrap the drive motor set speed function */
