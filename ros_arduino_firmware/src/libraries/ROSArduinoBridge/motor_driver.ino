@@ -1,121 +1,92 @@
 /***************************************************************
    Motor driver definitions
-   
+
    Add a "#elif defined" block to this file to include support
    for a particular motor driver.  Then add the appropriate
    #define near the top of the main ROSArduinoBridge.ino file.
-   
+
    *************************************************************/
 
 #ifdef USE_BASE
-   
-#ifdef POLOLU_VNH5019
-  /* Include the Pololu library */
-  #include "DualVNH5019MotorShield.h"
 
-  /* Create the motor driver object */
-  DualVNH5019MotorShield drive;
+#ifdef POLOLU_TB9051FTG
+/* Include the Pololu library */
+#include <TB9051FTGMotorCarrier.h>
+
+/* Create the motor driver object */
+TB9051FTGMotorCarrier leftDrive{LEFT_MOTOR_PIN_A, LEFT_MOTOR_PIN_B};
+TB9051FTGMotorCarrier rightDrive{RIGHT_MOTOR_PIN_A, RIGHT_MOTOR_PIN_B};
+
+/* Wrap the motor driver initialization */
+void initMotorController() {
+  leftDrive.enable();
+  rightDrive.enable();
   
-  /* Wrap the motor driver initialization */
-  void initMotorController() {
-    drive.init();
-  }
+  rightDrive.setBrakeMode(ENABLE_HARD_BRAKE);
+  leftDrive.setBrakeMode(ENABLE_HARD_BRAKE);
+}
 
-  /* Wrap the drive motor set speed function */
-  void setMotorSpeed(int i, int spd) {
-    if (i == LEFT) drive.setM1Speed(spd);
-    else drive.setM2Speed(spd);
-  }
+/* Wrap the drive motor set speed function */
+void setMotorSpeed(float i, float spd) {
+  if (i == LEFT) leftDrive.setOutput(spd);
+  else rightDrive.setOutput(spd);
+}
 
-  // A convenience function for setting both motor speeds
-  void setMotorSpeeds(int leftSpeed, int rightSpeed) {
-    setMotorSpeed(LEFT, leftSpeed);
-    setMotorSpeed(RIGHT, rightSpeed);
-  }
-#elif defined POLOLU_MC33926
-  /* Include the Pololu library */
-  #include "DualMC33926MotorShield.h"
+// A convenience function for setting both motor speeds
+void setMotorSpeeds(float leftSpeed, float rightSpeed) {
+  setMotorSpeed(LEFT, leftSpeed);
+  setMotorSpeed(RIGHT, rightSpeed);
+}
 
-  /* Create the motor driver object */
-  DualMC33926MotorShield drive;
-  
-  /* Wrap the motor driver initialization */
-  void initMotorController() {
-    drive.init();
-  }
+float getMotorCurrent(int i){
+  if (i == LEFT) return leftDrive.getCurrent();
+  else return rightDrive.getCurrent();
+}
 
-  /* Wrap the drive motor set speed function */
-  void setMotorSpeed(int i, int spd) {
-    if (i == LEFT) drive.setM1Speed(spd);
-    else drive.setM2Speed(spd);
-  }
+// Disable motors
+void disableMotors(){
+  leftDrive.disable();
+  rightDrive.disable();
+}
 
-  // A convenience function for setting both motor speeds
-  void setMotorSpeeds(int leftSpeed, int rightSpeed) {
-    setMotorSpeed(LEFT, leftSpeed);
-    setMotorSpeed(RIGHT, rightSpeed);
-  }
-
-#elif defined POLOLU_TB9051FTG
-  /* Include the Pololu library */
-  #include "DualTB9051FTGMotorShield.h"
-
-  /* Create the motor driver object */
-  DualTB9051FTGMotorShield drive;
-  
-  /* Wrap the motor driver initialization */
-  void initMotorController() {
-    drive.init();
-    drive.enableDrivers();
-    //drive.flipM1(true);
-  }
-
-  /* Wrap the drive motor set speed function */
-  void setMotorSpeed(int i, int spd) {
-    if (i == LEFT) drive.setM1Speed(spd);
-    else drive.setM2Speed(spd);
-  }
-
-  // A convenience function for setting both motor speeds
-  void setMotorSpeeds(int leftSpeed, int rightSpeed) {
-    setMotorSpeed(LEFT, leftSpeed);
-    setMotorSpeed(RIGHT, rightSpeed);
-  }
-
-  
-#elif defined L298_MOTOR_DRIVER
-  void initMotorController() {
-    digitalWrite(RIGHT_MOTOR_ENABLE, HIGH);
-    digitalWrite(LEFT_MOTOR_ENABLE, HIGH);
-  }
-  
-  void setMotorSpeed(int i, int spd) {
-    unsigned char reverse = 0;
-  
-    if (spd < 0)
-    {
-      spd = -spd;
-      reverse = 1;
+// Disable motors // TODO: Work in progress don't use
+void rampDown(){
+  int sqrt_ = 0;
+  while (leftPID.TargetTicksPerFrame != 0 || rightPID.TargetTicksPerFrame != 0){
+    Serial.print("ramp_down: ");
+    Serial.println(leftPID.TargetTicksPerFrame);
+    if ( leftPID.TargetTicksPerFrame > 0 ){
+      sqrt_ = sqrt(leftPID.TargetTicksPerFrame);
+      if ( leftPID.TargetTicksPerFrame > sqrt_ ){
+        leftPID.TargetTicksPerFrame = leftPID.TargetTicksPerFrame - sqrt_;
+      }else{
+        leftPID.TargetTicksPerFrame = 0;
+      }
+    } else {
+      if ( leftPID.TargetTicksPerFrame < sqrt_ ){
+        leftPID.TargetTicksPerFrame = leftPID.TargetTicksPerFrame + sqrt_;
+      }else{
+        leftPID.TargetTicksPerFrame = 0;
+      }
     }
-    if (spd > 255)
-      spd = 255;
     
-    if (i == LEFT) { 
-      if      (reverse == 0) { analogWrite(RIGHT_MOTOR_FORWARD, spd); analogWrite(RIGHT_MOTOR_BACKWARD, 0); }
-      else if (reverse == 1) { analogWrite(RIGHT_MOTOR_BACKWARD, spd); analogWrite(RIGHT_MOTOR_FORWARD, 0); }
-    }
-    else /*if (i == RIGHT) //no need for condition*/ {
-      if      (reverse == 0) { analogWrite(LEFT_MOTOR_FORWARD, spd); analogWrite(LEFT_MOTOR_BACKWARD, 0); }
-      else if (reverse == 1) { analogWrite(LEFT_MOTOR_BACKWARD, spd); analogWrite(LEFT_MOTOR_FORWARD, 0); }
-    }
+    if ( rightPID.TargetTicksPerFrame > 0 ){
+      rightPID.TargetTicksPerFrame = rightPID.TargetTicksPerFrame - 1;
+    } else {
+      rightPID.TargetTicksPerFrame = rightPID.TargetTicksPerFrame + 1;
+    }    
+
+    delay(30);
+    updatePID();
+    
   }
-  
-  void setMotorSpeeds(int leftSpeed, int rightSpeed) {
-    setMotorSpeed(LEFT, leftSpeed);
-    setMotorSpeed(RIGHT, rightSpeed);
-  }
+
+  setMotorSpeeds(0, 0);
+  moving = 0;
+}
+
 #else
-  #error A motor driver must be selected!
+#error A motor driver must be selected!
 #endif
 
 #endif

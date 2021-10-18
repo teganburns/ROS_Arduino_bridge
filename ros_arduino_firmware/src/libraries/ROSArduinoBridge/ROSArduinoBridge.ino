@@ -44,29 +44,21 @@
     ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
+#include "Math.h"
 
+//#define ENCODER_OPTIMIZE_INTERRUPTS
 #define USE_BASE      // Enable the base controller code
 //#undef USE_BASE     // Disable the base controller code
 
 /* Define the motor controller and encoder library you are using */
 #ifdef USE_BASE
-   /* The Pololu VNH5019 dual motor driver shield */
-   //#define POLOLU_VNH5019
-
-   /* The Pololu MC33926 dual motor driver shield */
-   //#define POLOLU_MC33926
    
-   /* The Pololu MC33926 dual motor driver shield */
+   /* The Pololu TB9051FTG single motor driver shield */
    #define POLOLU_TB9051FTG
-
-   /* The RoboGaia encoder shield */
-   //#define ROBOGAIA
    
    /* Encoders directly attached to Arduino board */
    #define ARDUINO_ENC_COUNTER
 
-   /* L298 Motor driver*/
-   //#define L298_MOTOR_DRIVER
 #endif
 
 //#define USE_SERVOS  // Enable use of PWM servos as defined in servos.h
@@ -125,7 +117,7 @@
 
 // A pair of varibles to help parse serial commands (thanks Fergs)
 int arg = 0;
-int index = 0;
+int index_ = 0;
 
 // Variable to hold an input character
 char chr;
@@ -149,7 +141,7 @@ void resetCommand() {
   arg1 = 0;
   arg2 = 0;
   arg = 0;
-  index = 0;
+  index_ = 0;
 }
 
 /* Run a command.  Commands are defined in commands.h */
@@ -196,6 +188,7 @@ int runCommand() {
   case SERVO_READ:
     Serial.println(servos[arg1].getServo().read());
     break;
+    
 #endif
     
 #ifdef USE_BASE
@@ -223,7 +216,9 @@ int runCommand() {
     Serial.println("OK"); 
     break;
   case UPDATE_PID:
-    while ((str = strtok_r(p, ":", &p)) != '\0') {
+
+  str = strtok_r(p, ":", &p);
+    while (*str != '\0') {
        pid_args[i] = atoi(str);
        i++;
     }
@@ -233,6 +228,9 @@ int runCommand() {
     Ko = pid_args[3];
     Serial.println("OK");
     break;
+
+     
+
 #endif
   default:
     Serial.println("Invalid Command");
@@ -247,27 +245,9 @@ void setup() {
 // Initialize the motor controller if used */
 #ifdef USE_BASE
   #ifdef ARDUINO_ENC_COUNTER
-    //set as inputs
-    DDRD &= ~(1<<LEFT_ENC_PIN_A);
-    DDRD &= ~(1<<LEFT_ENC_PIN_B);
 
-    DDRC &= ~(1<<RIGHT_ENC_PIN_A);
-    DDRC &= ~(1<<RIGHT_ENC_PIN_B);
+  // Everything written to encoder_driver
     
-    //enable pull up resistors
-    PORTD |= (1<<LEFT_ENC_PIN_A);
-    PORTD |= (1<<LEFT_ENC_PIN_B);
-
-    PORTC |= (1<<RIGHT_ENC_PIN_A);
-    PORTC |= (1<<RIGHT_ENC_PIN_B);
-    
-    // tell pin change mask to listen to left encoder pins
-    PCMSK2 |= (1 << LEFT_ENC_PIN_A)|(1 << LEFT_ENC_PIN_B);
-    // tell pin change mask to listen to right encoder pins
-    PCMSK1 |= (1 << RIGHT_ENC_PIN_A)|(1 << RIGHT_ENC_PIN_B);
-    
-    // enable PCINT1 and PCINT2 interrupt in the general interrupt mask
-    PCICR |= (1 << PCIE1) | (1 << PCIE2);
   #endif
   initMotorController();
   resetPID();
@@ -297,8 +277,8 @@ void loop() {
 
     // Terminate a command with a CR
     if (chr == 13) {
-      if (arg == 1) argv1[index] = NULL;
-      else if (arg == 2) argv2[index] = NULL;
+      if (arg == 1) argv1[index_] = NULL;
+      else if (arg == 2) argv2[index_] = NULL;
       runCommand();
       resetCommand();
     }
@@ -307,9 +287,9 @@ void loop() {
       // Step through the arguments
       if (arg == 0) arg = 1;
       else if (arg == 1)  {
-        argv1[index] = NULL;
+        argv1[index_] = NULL;
         arg = 2;
-        index = 0;
+        index_ = 0;
       }
       continue;
     }
@@ -320,12 +300,12 @@ void loop() {
       }
       else if (arg == 1) {
         // Subsequent arguments can be more than one character
-        argv1[index] = chr;
-        index++;
+        argv1[index_] = chr;
+        index_++;
       }
       else if (arg == 2) {
-        argv2[index] = chr;
-        index++;
+        argv2[index_] = chr;
+        index_++;
       }
     }
   }
@@ -339,7 +319,8 @@ void loop() {
   
   // Check to see if we have exceeded the auto-stop interval
   if ((millis() - lastMotorCommand) > AUTO_STOP_INTERVAL) {;
-    setMotorSpeeds(0, 0);
+    psetMotorSpeeds(0, 0);
+    //rampDown();
     moving = 0;
   }
 #endif

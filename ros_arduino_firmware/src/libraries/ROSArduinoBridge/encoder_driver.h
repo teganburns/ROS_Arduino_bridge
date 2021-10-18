@@ -4,14 +4,12 @@
    
    
 #ifdef ARDUINO_ENC_COUNTER
-  //below can be changed, but should be PORTD pins; 
-  //otherwise additional changes in the code are required
-  #define LEFT_ENC_PIN_A PD5  //pin 5
-  #define LEFT_ENC_PIN_B PD3  //pin 3
-  
-  //below can be changed, but should be PORTC pins
-  #define RIGHT_ENC_PIN_A PC4  //pin A4
-  #define RIGHT_ENC_PIN_B PC5   //pin A5
+
+  #define LEFT_ENC_PIN_A 4  //pin 2
+  #define LEFT_ENC_PIN_B 5  //pin 3
+
+  #define RIGHT_ENC_PIN_A 7  //pin 4
+  #define RIGHT_ENC_PIN_B 8   //pin 5
 #endif
    
 long readEncoder(int i);

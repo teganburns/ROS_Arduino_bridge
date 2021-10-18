@@ -8,7 +8,7 @@
 /* PID setpoint info For a Motor */
 typedef struct {
   double TargetTicksPerFrame;    // target speed in ticks per frame
-  long Encoder;                  // encoder count
+  long Encoder_;                  // encoder count
   long PrevEnc;                  // last encoder count
 
   /*
@@ -38,6 +38,8 @@ int Kd = 12;
 int Ki = 0;
 int Ko = 50;
 
+
+
 unsigned char moving = 0; // is the base in motion?
 
 /*
@@ -50,15 +52,15 @@ unsigned char moving = 0; // is the base in motion?
 */
 void resetPID(){
    leftPID.TargetTicksPerFrame = 0.0;
-   leftPID.Encoder = readEncoder(LEFT);
-   leftPID.PrevEnc = leftPID.Encoder;
+   leftPID.Encoder_ = readEncoder(LEFT);
+   leftPID.PrevEnc = leftPID.Encoder_;
    leftPID.output = 0;
    leftPID.PrevInput = 0;
    leftPID.ITerm = 0;
 
    rightPID.TargetTicksPerFrame = 0.0;
-   rightPID.Encoder = readEncoder(RIGHT);
-   rightPID.PrevEnc = rightPID.Encoder;
+   rightPID.Encoder_ = readEncoder(RIGHT);
+   rightPID.PrevEnc = rightPID.Encoder_;
    rightPID.output = 0;
    rightPID.PrevInput = 0;
    rightPID.ITerm = 0;
@@ -71,7 +73,7 @@ void doPID(SetPointInfo * p) {
   int input;
 
   //Perror = p->TargetTicksPerFrame - (p->Encoder - p->PrevEnc);
-  input = p->Encoder - p->PrevEnc;
+  input = p->Encoder_ - p->PrevEnc;
   Perror = p->TargetTicksPerFrame - input;
 
 
@@ -83,7 +85,7 @@ void doPID(SetPointInfo * p) {
   //output = (Kp * Perror + Kd * (Perror - p->PrevErr) + Ki * p->Ierror) / Ko;
   // p->PrevErr = Perror;
   output = (Kp * Perror - Kd * (input - p->PrevInput) + p->ITerm) / Ko;
-  p->PrevEnc = p->Encoder;
+  p->PrevEnc = p->Encoder_;
 
   output += p->output;
   // Accumulate Integral error *or* Limit output.
@@ -105,8 +107,8 @@ void doPID(SetPointInfo * p) {
 /* Read the encoder values and call the PID routine */
 void updatePID() {
   /* Read the encoders */
-  leftPID.Encoder = readEncoder(LEFT);
-  rightPID.Encoder = readEncoder(RIGHT);
+  leftPID.Encoder_ = readEncoder(LEFT);
+  rightPID.Encoder_ = readEncoder(RIGHT);
   
   /* If we're not moving there is nothing more to do */
   if (!moving){
@@ -124,7 +126,12 @@ void updatePID() {
   doPID(&rightPID);
   doPID(&leftPID);
 
-  /* Set the motor speeds accordingly */
-  setMotorSpeeds(leftPID.output, rightPID.output);
-}
+  float out_ = (float)leftPID.output/255;
+  Serial.print("Test: ");
+  Serial.println((float)leftPID.output/255);
+  Serial.print("Actual: ");
+  Serial.println(out_);
 
+  /* Set the motor speeds accordingly */
+  setMotorSpeeds(out_, 0);
+}
