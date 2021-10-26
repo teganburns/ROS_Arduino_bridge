@@ -14,8 +14,8 @@
 #include <TB9051FTGMotorCarrier.h>
 
 /* Create the motor driver object */
-TB9051FTGMotorCarrier leftDrive{LEFT_MOTOR_PIN_A, LEFT_MOTOR_PIN_B};
-TB9051FTGMotorCarrier rightDrive{RIGHT_MOTOR_PIN_A, RIGHT_MOTOR_PIN_B};
+TB9051FTGMotorCarrier leftDrive{LEFT_MOTOR_PIN_B, LEFT_MOTOR_PIN_A}; // ** Orientation Reversed To Match Encoder Driver ** //
+TB9051FTGMotorCarrier rightDrive{RIGHT_MOTOR_PIN_A, RIGHT_MOTOR_PIN_B}; 
 
 /* Wrap the motor driver initialization */
 void initMotorController() {

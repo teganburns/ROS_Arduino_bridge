@@ -48,7 +48,6 @@
 
 //#define ENCODER_OPTIMIZE_INTERRUPTS
 #define USE_BASE      // Enable the base controller code
-//#undef USE_BASE     // Disable the base controller code
 
 /* Define the motor controller and encoder library you are using */
 #ifdef USE_BASE
@@ -216,9 +215,7 @@ int runCommand() {
     Serial.println("OK"); 
     break;
   case UPDATE_PID:
-
-  str = strtok_r(p, ":", &p);
-    while (*str != '\0') {
+    while ((str = strtok_r(p, ":", &p)) != NULL) {
        pid_args[i] = atoi(str);
        i++;
     }
@@ -228,7 +225,6 @@ int runCommand() {
     Ko = pid_args[3];
     Serial.println("OK");
     break;
-
      
 
 #endif
@@ -319,7 +315,7 @@ void loop() {
   
   // Check to see if we have exceeded the auto-stop interval
   if ((millis() - lastMotorCommand) > AUTO_STOP_INTERVAL) {;
-    psetMotorSpeeds(0, 0);
+    setMotorSpeeds(0, 0);
     //rampDown();
     moving = 0;
   }

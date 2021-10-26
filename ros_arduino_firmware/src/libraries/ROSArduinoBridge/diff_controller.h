@@ -126,12 +126,16 @@ void updatePID() {
   doPID(&rightPID);
   doPID(&leftPID);
 
-  float out_ = (float)leftPID.output/255;
+  
+  float out_left = (float)leftPID.output/255;
+  float out_right = (float)rightPID.output/255;
+  /*
   Serial.print("Test: ");
   Serial.println((float)leftPID.output/255);
   Serial.print("Actual: ");
-  Serial.println(out_);
+  Serial.println(out_left);
+  */
 
   /* Set the motor speeds accordingly */
-  setMotorSpeeds(out_, 0);
+  setMotorSpeeds(out_right, out_left);
 }

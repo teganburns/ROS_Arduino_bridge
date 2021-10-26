@@ -13,7 +13,7 @@
 #ifdef ARDUINO_ENC_COUNTER
   #include <Encoder.h>
   
-  Encoder leftEnc(LEFT_ENC_PIN_A, LEFT_ENC_PIN_B);
+  Encoder leftEnc(LEFT_ENC_PIN_B, LEFT_ENC_PIN_A); // ** Orientation Reversed To Match Motor Driver** //
   Encoder rightEnc(RIGHT_ENC_PIN_A, RIGHT_ENC_PIN_B);
 
   long left_enc_pos = 0L;
